@@ -2,10 +2,10 @@
     require('dotenv').config()
     const fs = require('fs')
     const tmi = require('tmi.js');
-    const terminal = require('./terminal');
+    const terminal = require('./libs/terminal');
     const getChannels = require('./libs/twitchApi');
     const dateStart = Date.now()
-    let msgs = []
+    let allMsgFormatedCsv = ['timestamp,channel,username,subscriber,mod,message']
     let scopedMsgs = []
 
     const twitchChannels = await getChannels(terminal.page, terminal.offset, terminal.language);
@@ -24,13 +24,13 @@
 
     client.on('message', async (channel, tags, message, self) => {
         if (self) return;
-        console.log(tags)
-        if (message.toLocaleLowerCase().includes(terminal.searchterm)) {
-            const msgFormatedCsv = `${channel},${tags.username},${message}`
-            console.log(msgFormatedCsv)
-            scopedMsgs.push(msgFormatedCsv)
+        if (terminal.searchterm) {
+            if (message.toLocaleLowerCase().includes(terminal.searchterm)) {
+                const msgFormatedCsv = `${channel},${tags.username},${message}`
+                scopedMsgs.push(msgFormatedCsv)
+            }
         }
-        msgs.push(message)
+        allMsgFormatedCsv.push(`${Date.now()},${channel.substring(1)},${tags.username},${tags.subscriber},${tags.mod},${message.replace(/,/g, "[,]")}`)
     })
 
     if (terminal.autoSave) {
@@ -41,9 +41,10 @@
 
 
     function saveData() {
-        const dirs = fs.readdirSync(__dirname)
-        fs.writeFileSync(`./output/${dateStart}_chatlog.txt`, msgs.join('\n'), 'utf8')
-        fs.writeFileSync(`./output/${dateStart}_scopedChatLog.csv`, scopedMsgs.join('\n'), 'utf8')
+        fs.writeFileSync(`./output/${dateStart}_chatlog.csv`, allMsgFormatedCsv.join('\n'), 'utf8')
+        if (terminal.searchterm) {
+            fs.writeFileSync(`./output/${dateStart}_scopedChatLog.csv`, scopedMsgs.join('\n'), 'utf8')
+        }
     }
 
     process.on('SIGINT', () => {
