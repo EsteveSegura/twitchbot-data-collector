@@ -9,6 +9,8 @@
     let scopedMsgs = []
 
     const twitchChannels = await getChannels(terminal.page, terminal.offset, terminal.language);
+    const terminalChannels = terminal.customChannels.split(',')
+    console.log(terminalChannels)
 
     const client = new tmi.Client({
         options: { debug: terminal.debug, messagesLogLevel: 'info' },
@@ -17,7 +19,7 @@
             username: 'fasterchatter',
             password: process.env.TOKENIRC
         },
-        channels: twitchChannels
+        channels: terminalChannels.concat(twitchChannels)
     })
 
     client.connect()
